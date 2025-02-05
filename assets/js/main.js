@@ -1,3 +1,4 @@
+const container = document.querySelector(".content");
 const listaOrdenada = document.querySelector(".pokemons");
 class PokemonModel {
   constructor(name, number, type, types, photo) {
@@ -75,3 +76,26 @@ const initializePokemonList = async () => {
 };
 
 initializePokemonList();
+
+const createLoadMoreButton = () => {
+  const button = document.createElement("button");
+  button.textContent = "Carregar mais";
+  button.classList.add("button");
+
+  button.addEventListener("click", async () => {
+    try {
+      const offset = listaOrdenada.children.length;
+      const pokemons = await fetchPokemons(offset, 10);
+      const pokemonsData = await fetchPokemonDetails(pokemons);
+      const detailedPokemons = mapToPokemonModel(pokemonsData);
+      createPokemonCards(detailedPokemons);
+    } catch (error) {
+      console.error("Erro ao carregar mais Pokémons:", error);
+    }
+  });
+
+  container.appendChild(button);
+};
+
+// Adiciona o botão ao contêiner
+createLoadMoreButton();
