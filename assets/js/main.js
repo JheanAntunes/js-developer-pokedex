@@ -1,5 +1,3 @@
-console.log("Sucesso!");
-<<<<<<< HEAD
 const container = document.querySelector(".content");
 const listaOrdenada = document.querySelector(".pokemons");
 class PokemonModel {
@@ -101,5 +99,3 @@ const createLoadMoreButton = () => {
 
 // Adiciona o botão ao contêiner
 createLoadMoreButton();
-=======
->>>>>>> eb1cdf2f6525dfbc286aa7d50672e459bd0d3160
