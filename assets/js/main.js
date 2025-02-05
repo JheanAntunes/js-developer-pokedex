@@ -1,47 +1,101 @@
-const pokemonList = document.getElementById('pokemonList')
-const loadMoreButton = document.getElementById('loadMoreButton')
-
-const maxRecords = 151
-const limit = 10
-let offset = 0;
-
-function convertPokemonToLi(pokemon) {
-    return `
-        <li class="pokemon ${pokemon.type}">
-            <span class="number">#${pokemon.number}</span>
-            <span class="name">${pokemon.name}</span>
-
-            <div class="detail">
-                <ol class="types">
-                    ${pokemon.types.map((type) => `<li class="type ${type}">${type}</li>`).join('')}
-                </ol>
-
-                <img src="${pokemon.photo}"
-                     alt="${pokemon.name}">
-            </div>
-        </li>
-    `
+const container = document.querySelector(".content");
+const listaOrdenada = document.querySelector(".pokemons");
+class PokemonModel {
+  constructor(name, number, type, types, photo) {
+    this.name = name;
+    this.number = number;
+    this.type = type;
+    this.types = types;
+    this.photo = photo;
+  }
 }
 
-function loadPokemonItens(offset, limit) {
-    pokeApi.getPokemons(offset, limit).then((pokemons = []) => {
-        const newHtml = pokemons.map(convertPokemonToLi).join('')
-        pokemonList.innerHTML += newHtml
-    })
-}
+// Função para buscar Pokémons
+const fetchPokemons = async (offset = 0, limit = 10) => {
+  try {
+    const response = await fetch(
+      `https://pokeapi.co/api/v2/pokemon?offset=${offset}&limit=${limit}`
+    );
+    const data = await response.json();
+    return data.results;
+  } catch (error) {
+    console.error(error);
+  }
+};
 
-loadPokemonItens(offset, limit)
+// Função para obter informações detalhadas dos Pokémons
+const fetchPokemonDetails = async (pokemons) => {
+  const promises = pokemons.map(async (pokemon) => {
+    const response = await fetch(pokemon.url);
+    return response.json();
+  });
+  return Promise.all(promises);
+};
 
-loadMoreButton.addEventListener('click', () => {
-    offset += limit
-    const qtdRecordsWithNexPage = offset + limit
+// Função para criar uma instância de PokemonModel
+const createPokemonModel = (detailPokemon) =>
+  new PokemonModel(
+    detailPokemon.name,
+    detailPokemon.id,
+    detailPokemon.types[0].type.name,
+    detailPokemon.types,
+    detailPokemon.sprites.front_default
+  );
 
-    if (qtdRecordsWithNexPage >= maxRecords) {
-        const newLimit = maxRecords - offset
-        loadPokemonItens(offset, newLimit)
+// Função para mapear os dados detalhados para o modelo de Pokémon
+const mapToPokemonModel = (pokemonsData) =>
+  pokemonsData.map(createPokemonModel);
 
-        loadMoreButton.parentElement.removeChild(loadMoreButton)
-    } else {
-        loadPokemonItens(offset, limit)
+// Função para criar os cartões de Pokémon
+const createPokemonCards = (pokemons) => {
+  pokemons.forEach((pokemon) => {
+    const li = document.createElement("li");
+    li.classList.add("pokemon");
+    li.innerHTML = `
+      <span class="number">${pokemon.number}</span>
+      <span class="name">${pokemon.name}</span>
+      <div class="detail">
+        <ol class="types">
+          ${pokemon.types
+            .map((type) => `<li class="type">${type.type.name}</li>`)
+            .join("")}
+        </ol>
+        <img src="${pokemon.photo}" alt="${pokemon.name}" />
+      </div>
+    `;
+    listaOrdenada.appendChild(li);
+  });
+};
+
+// Função principal para orquestrar as outras funções
+const initializePokemonList = async () => {
+  const pokemons = await fetchPokemons();
+  const pokemonsData = await fetchPokemonDetails(pokemons);
+  const detailedPokemons = mapToPokemonModel(pokemonsData);
+  createPokemonCards(detailedPokemons);
+};
+
+initializePokemonList();
+
+const createLoadMoreButton = () => {
+  const button = document.createElement("button");
+  button.textContent = "Carregar mais";
+  button.classList.add("button");
+
+  button.addEventListener("click", async () => {
+    try {
+      const offset = listaOrdenada.children.length;
+      const pokemons = await fetchPokemons(offset, 10);
+      const pokemonsData = await fetchPokemonDetails(pokemons);
+      const detailedPokemons = mapToPokemonModel(pokemonsData);
+      createPokemonCards(detailedPokemons);
+    } catch (error) {
+      console.error("Erro ao carregar mais Pokémons:", error);
     }
-})
+  });
+
+  container.appendChild(button);
+};
+
+// Adiciona o botão ao contêiner
+createLoadMoreButton();
